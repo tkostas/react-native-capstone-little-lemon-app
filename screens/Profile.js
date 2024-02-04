@@ -26,14 +26,14 @@ const validateName = (name) => {
 
 const validatePhoneNum = (phoneNum) => {
   if (phoneNum.length === 10) {
-    return true
+    return true;
   } else {
-    return false
+    return false;
   }
 };
 
 export default function ProfileScreen() {
-  const { state, setState, setRequestLogout } =
+  const { state, setState, setRequestLogout, setSaveChanges } =
     React.useContext(AppStateContext);
   const [avatarInitials, setAvatarInitials] = React.useState();
   const [avatarUri, setAvatarUri] = React.useState("");
@@ -54,15 +54,23 @@ export default function ProfileScreen() {
     setEmail(state.email ? state.email : "");
     setPhoneNumber(state.phoneNumber ? state.phoneNumber : "");
     setEmailPasswordChanges(
-      state.emailPasswordChanges ? state.emailPasswordChanges : true,
+      typeof state.emailPasswordChanges === "boolean"
+        ? state.emailPasswordChanges
+        : true,
     );
     setEmailOtherStatuses(
-      state.emailOtherStatuses ? state.emailOtherStatuses : true,
+      typeof state.emailOtherStatuses === "boolean"
+        ? state.emailOtherStatuses
+        : true,
     );
     setEmailSpecialOffers(
-      state.emailSpecialOffers ? state.emailSpecialOffers : true,
+      typeof state.emailSpecialOffers === "boolean"
+        ? state.emailSpecialOffers
+        : true,
     );
-    setEmailNewsletter(state.emailNewsletter ? state.emailNewsletter : true);
+    setEmailNewsletter(
+      typeof state.emailNewsletter === "boolean" ? state.emailNewsletter : true,
+    );
   };
 
   React.useEffect(() => {
@@ -70,6 +78,12 @@ export default function ProfileScreen() {
     console.log(state);
     loadDefaultValues();
   }, []);
+
+  React.useEffect(() => {
+    if (firstName.length > 0 && lastName.length > 0) {
+      setAvatarInitials(firstName[0].toUpperCase() + lastName[0].toUpperCase());
+    }
+  }, [firstName, lastName]);
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -121,7 +135,7 @@ export default function ProfileScreen() {
       hasValidEmail &&
       hasValidPhoneNumber
     ) {
-      console.log('profile view --> updating state')
+      console.log("profile view --> updating state");
       setState({
         ...state,
         firstName,
@@ -135,6 +149,7 @@ export default function ProfileScreen() {
         emailSpecialOffers,
         emailNewsletter,
       });
+      setSaveChanges(true);
     }
   };
 

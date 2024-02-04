@@ -13,7 +13,7 @@ const Stack = createNativeStackNavigator();
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [stateUpdated, setStateUpdated] = useState(false);
+  const [saveChanges, setSaveChanges] = useState(false);
   const [requestLogout, setRequestLogout] = useState(false);
   const defaultState = {
     isLoading: true,
@@ -34,97 +34,49 @@ export default function App() {
       return false;
     }
   };
+  const loadLocalState = async () => {
+    try {
+      const savedState = await AsyncStorage.getItem('appState')
+      if (savedState !== null) {
+        let parsedState = JSON.parse(savedState)
+        console.log('parsed local state: '+ JSON.stringify(parsedState))
+        return parsedState
+      } else {
+        return defaultState
+      }
+    } catch (e) {
+      return defaultState
+    }
+  }
 
   useEffect(() => {
     console.log("initial state: " + JSON.stringify(state));
-    getLocalOnboardingStatus().then((storedLoginStatus) => {
+    loadLocalState().then((loadedState) => {
+      setState({...state, ...loadedState, isLoading: false})
+        console.log("initially loaded state: " + JSON.stringify(state));
 
-      setState({...state, isLoading: false})
-      // setState({
-      //   ...state,
-      //   isLoading: false,
-      //   isOnboardingCompleted: storedLoginStatus,
-      // });
-      //   // setIsLoggedIn(storedLoginStatus);
-      console.log("initially loaded state: " + JSON.stringify(state));
-      console.log("onLoad storedLoginStatus: " + storedLoginStatus);
-      console.log("---\n");
-    });
-
+    })
+    // getLocalOnboardingStatus().then((storedLoginStatus) => {
+    //   setState({ ...state, isLoading: false });
+    //   console.log("initially loaded state: " + JSON.stringify(state));
+    //   console.log("onLoad storedLoginStatus: " + storedLoginStatus);
+    //   console.log("---\n");
+    // });
   }, []);
 
-  // TODO - persist state on async storage
-  // useEffect(() => {
-  //   getLocalOnboardingStatus().then((storedLoginStatus) => {
-  //     if (storedLoginStatus && !state.isOnboardingCompleted) {
-  //       console.log("user selected to logout - empty block");
-  //     }
-  //     if (storedLoginStatus && state.isOnboardingCompleted) {
-  //       console.log(
-  //         "onboarding completed and app initially loaded --> load state from asyncstorage",
-  //       );
-  //       const keys = [
-  //         "avatarInitials",
-  //         "avatarUri",
-  //         "firstName",
-  //         "lastName",
-  //         "email",
-  //         "phoneNumber",
-  //         "emailOtherStatuses",
-  //         "emailPasswordChanges",
-  //         "emailSpecialOffers",
-  //         "emailNewsletter",
-  //       ];
-  //
-  //       // AsyncStorage.multiGet(keys).then((values) => {
-  //       //   let parsedValues = {};
-  //       //   for (const pair of values) {
-  //       //     try {
-  //       //       const value = JSON.parse(pair[1]);
-  //       //       if (value == null) {
-  //       //         parsedValues[pair[0]] = value;
-  //       //       }
-  //       //     } catch (e) {
-  //       //       console.log(e);
-  //       //     }
-  //       //   }
-  //       //   if (!stateUpdated) {
-  //       //     setStateUpdated(true);
-  //       //     setState({ ...state, ...parsedValues });
-  //       //   }
-  //       //
-  //       //   console.log(parsedValues);
-  //       // });
-  //       console.log(state);
-  //     }
-  //     if (!storedLoginStatus && !state.isOnboardingCompleted) {
-  //       console.log(
-  //         "onboarding is not completed and app initially loaded --> nothing to update",
-  //       );
-  //       console.log(state);
-  //     }
-  //     if (!storedLoginStatus && state.isOnboardingCompleted) {
-  //       console.log("new login");
-  //       // AsyncStorage.multiSet(
-  //       //   [
-  //       //     ["isOnboardingCompleted", JSON.stringify(true)],
-  //       //     ["firstName", JSON.stringify(state.firstName)],
-  //       //     ["email", JSON.stringify(state.email)],
-  //       //   ],
-  //       //   () => {
-  //       //     setState({
-  //       //       ...state,
-  //       //       isOnboardingCompleted: true,
-  //       //       isLoading: false,
-  //       //     });
-  //       //   },
-  //       // );
-  //       console.log(state);
-  //     }
-  //     console.log("onUpdate storedLoginStatus: " + storedLoginStatus);
-  //     console.log("-----");
-  //   });
-  // }, [state]);
+  useEffect(() => {
+    if (saveChanges) {
+      console.log("Persisting Updated state: " + JSON.stringify(state));
+
+      try {
+        AsyncStorage.setItem("appState", JSON.stringify(state));
+      } catch (e) {
+        console.error(e);
+      }
+
+      setSaveChanges(false);
+    }
+  }, [saveChanges]);
 
   useEffect(() => {
     if (requestLogout) {
@@ -147,7 +99,7 @@ export default function App() {
 
   return (
     <AppStateContext.Provider
-      value={{ state, setState, setRequestLogout }}
+      value={{ state, setState, setRequestLogout, setSaveChanges }}
     >
       <NavigationContainer>
         <Stack.Navigator>
