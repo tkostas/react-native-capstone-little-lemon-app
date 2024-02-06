@@ -9,6 +9,10 @@ import {
   Image,
   FlatList,
 } from "react-native";
+import { useState, useEffect } from "react";
+import * as SQLite from "expo-sqlite";
+
+const db = SQLite.openDatabase("little_lemon");
 
 const ItemView = ({ item }) => {
   function trimText(text, limit) {
@@ -18,6 +22,7 @@ const ItemView = ({ item }) => {
       return text;
     }
   }
+  const imgUri = `https://github.com/Meta-Mobile-Developer-PC/Working-With-Data-API/blob/main/images/${item.image}?raw=true`;
   return (
     <View style={styles.itemContainer}>
       <Text style={styles.itemHeader}>{item.name}</Text>
@@ -28,10 +33,8 @@ const ItemView = ({ item }) => {
           </Text>
           <Text style={styles.itemPrice}>${item.price}</Text>
         </View>
-        <Image source={require("../assets/icon.png")} style={styles.foodImg} />
+        <Image source={{ uri: imgUri }} style={styles.foodImg} />
       </View>
-
-      {/*<Image source={{ uri: item.image }} style={styles.foodImg} />*/}
     </View>
   );
 };
@@ -67,38 +70,104 @@ function HomeHeader() {
     </View>
   );
 }
+
 export default function HomeScreen() {
-  // todo - fetch data https://www.coursera.org/learn/capstone-react-app/supplement/qCY26/exercise-building-the-home-screen
-  const data = [
-    {
-      name: "Greek Salad",
-      price: 12.99,
-      description:
-        "Our delicious salad is served with Feta cheese and peeled cucumber. Includes tomatoes, onions, olives, salt and oregano in the ingredients.",
-      image: "greekSalad.jpg",
-    },
-    {
-      name: "Bruschetta",
-      price: 7.99,
-      description:
-        "Delicious grilled bread rubbed with garlic and topped with olive oil and salt. Our Bruschetta includes tomato and cheese.",
-      image: "bruschetta.jpg",
-    },
-    {
-      name: "Greek Salad",
-      price: 12.99,
-      description:
-        "Our delicious salad is served with Feta cheese and peeled cucumber. Includes tomatoes, onions, olives, salt and oregano in the ingredients.",
-      image: "greekSssalad.jpg",
-    },
-    {
-      name: "Bruschetta",
-      price: 7.99,
-      description:
-        "Delicious grilled bread rubbed with garlic and topped with olive oil and salt. Our Bruschetta includes tomato and cheese.",
-      image: "bruscheddtta.jpg",
-    },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState([]);
+  const pullData = async () => {
+    try {
+      console.log("fetching data ...");
+      const response = await fetch(
+        "https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json",
+      );
+      const json = await response.json();
+      db.transaction((tx) => {
+        json.menu.forEach((item) => {
+          tx.executeSql(
+            `INSERT INTO menuItems (name, category, price, description, image) values (?, ?, ?, ?, ?)`,
+            [
+              item.name,
+              item.category,
+              item.price,
+              item.description,
+              item.image,
+            ],
+            (insertResults) => console.log("Successful insertion"),
+          ),
+            (_, error) => console.log("data insertion error: ", error);
+        });
+      });
+
+      // setData(json.menu);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const createTableIfNotExists = () => {
+    db.transaction((tx) => {
+      // tx.executeSql(
+      //     "DROP TABLE IF EXISTS menuItems",
+      //     [],
+      //     () => { console.log('table dropped')},
+      //     (_, error) => {console.log('error: ', error)}
+      // )
+      tx.executeSql(
+        `CREATE TABLE IF NOT EXISTS menuItems (
+            id INTEGER PRIMARY KEY NOT NULL,
+            name TEXT,
+            category TEXT,
+            price REAL,
+            description TEXT,
+            image TEXT
+
+           )`,
+        [],
+        () => {
+          console.log("table created successfully");
+        },
+        (_, error) => {
+          console.error("Error occured while creating table", error);
+        },
+      );
+    });
+  };
+
+  const readLocalData = async () => {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "SELECT * FROM menuItems",
+          [],
+          (_, result) => resolve(result.rows._array),
+          (_, error) => {
+            console.log("Database read error:", error);
+            reject(error);
+          },
+        );
+      });
+    });
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      let results = await readLocalData();
+      if (results.length > 0) {
+        console.log("Using local data ...");
+        setData(results);
+      } else {
+        console.log("Requesting a new dataset ...");
+        await pullData();
+        results = await readLocalData();
+        setData(results);
+      }
+    };
+
+    createTableIfNotExists();
+    fetchData();
+  }, []);
+
   return (
     <View style={styles.container}>
       <FlatList

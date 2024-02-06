@@ -12,7 +12,7 @@ import {
 import AppStateContext from "../AppContext";
 import Checkbox from "expo-checkbox";
 import * as ImagePicker from "expo-image-picker";
-import { MaskedTextInput, unMask } from "react-native-mask-text";
+import { MaskedTextInput } from "react-native-mask-text";
 
 const validateEmail = (email) => {
   const re =

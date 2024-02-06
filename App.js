@@ -47,7 +47,7 @@ export default function App() {
       const savedState = await AsyncStorage.getItem("appState");
       if (savedState !== null) {
         let parsedState = JSON.parse(savedState);
-        console.log("parsed local state: " + JSON.stringify(parsedState));
+        // console.log("parsed local state: " + JSON.stringify(parsedState));
         return parsedState;
       } else {
         return defaultState;
