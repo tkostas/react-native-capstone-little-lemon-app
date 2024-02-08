@@ -12,20 +12,24 @@ import AppStateContext from "./AppContext";
 
 const Stack = createNativeStackNavigator();
 
-
 function HomeHeader(props) {
   const navigation = useNavigation();
 
   return (
     <View style={styles.flexRow}>
       <Text style={styles.title}>{props.children}</Text>
-      <View style={styles.avatarContainer}>
+      <View
+        style={styles.avatarContainer}
+        onPress={() => navigation.navigate("Profile")}
+      >
         <Pressable onPress={() => navigation.navigate("Profile")}>
           {props.avatarUri && (
             <Image source={{ uri: props.avatarUri }} style={styles.avatarImg} />
           )}
           {!props.avatarUri && (
-            <Text style={styles.avatarText}>{props.avatarInitials}</Text>
+            <Text style={styles.avatarText}>
+              {props.avatarInitials ? props.avatarInitials : "NA"}
+            </Text>
           )}
         </Pressable>
       </View>
@@ -58,16 +62,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    console.log("initial state: " + JSON.stringify(state));
+    // console.log("initial state: " + JSON.stringify(state));
     loadLocalState().then((loadedState) => {
       setState({ ...state, ...loadedState, isLoading: false });
-      console.log("initially loaded state: " + JSON.stringify(state));
+      // console.log("initially loaded state: " + JSON.stringify(state));
     });
   }, []);
 
   useEffect(() => {
     if (saveChanges) {
-      console.log("Persisting Updated state: " + JSON.stringify(state));
+      // console.log("Persisting Updated state: " + JSON.stringify(state));
 
       try {
         AsyncStorage.setItem("appState", JSON.stringify(state));
@@ -81,13 +85,18 @@ export default function App() {
 
   useEffect(() => {
     if (requestLogout) {
-      console.log(
-        "user selected to logout --> setting state to default\n---------",
-      );
+      // console.log(
+      //   "user selected to logout --> setting state to default\n---------",
+      // );
+      try {
+        AsyncStorage.removeItem("appState");
+      } catch (e) {
+        console.error(e);
+      }
       AsyncStorage.setItem("isOnboardingCompleted", JSON.stringify(false)).then(
         () => {
           setState({ ...defaultState, isLoading: false });
-          console.log(state);
+          // console.log(state);
         },
       );
       setRequestLogout(false);
@@ -120,9 +129,7 @@ export default function App() {
                 component={ProfileScreen}
                 options={{
                   title: "Personal Info",
-                  headerTitle: (props) => (
-                    <HomeHeader {...props} {...state} />
-                  ),
+                  headerTitle: (props) => <HomeHeader {...props} {...state} />,
                 }}
               />
             </React.Fragment>
@@ -161,7 +168,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#e5e3e3",
     fontWeight: "600",
-    fontSize: 10,
+    fontSize: 20,
   },
   avatarImg: {
     width: 40,

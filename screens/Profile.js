@@ -47,7 +47,7 @@ export default function ProfileScreen() {
   const [emailNewsletter, setEmailNewsletter] = React.useState();
 
   const loadDefaultValues = () => {
-    setAvatarInitials("UNK");
+    setAvatarInitials(state.avatarInitials ? state.avatarInitials : "?");
     setAvatarUri(state.avatarUri ? state.avatarUri : "");
     setFirstName(state.firstName ? state.firstName : "");
     setLastName(state.lastName ? state.lastName : "");
@@ -74,8 +74,8 @@ export default function ProfileScreen() {
   };
 
   React.useEffect(() => {
-    console.log("Profile screen - state on initial loading");
-    console.log(state);
+    // console.log("Profile screen - state on initial loading");
+    // console.log(state);
     loadDefaultValues();
   }, []);
 
@@ -135,7 +135,7 @@ export default function ProfileScreen() {
       hasValidEmail &&
       hasValidPhoneNumber
     ) {
-      console.log("profile view --> updating state");
+      // console.log("profile view --> updating state");
       setState({
         ...state,
         firstName,

@@ -1,18 +1,14 @@
 import * as React from "react";
+import { useEffect, useState } from "react";
+import { FlatList, Image, StyleSheet, Text, View } from "react-native";
+import { HomeHeader } from "../components/HomeHeader";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  Pressable,
-  Alert,
-  Image,
-  FlatList,
-} from "react-native";
-import { useState, useEffect } from "react";
-import * as SQLite from "expo-sqlite";
-
-const db = SQLite.openDatabase("little_lemon");
+  createTableIfNotExists,
+  filterByQueryAndCategories,
+  getCategories,
+  insertData,
+  readLocalData,
+} from "../db/crud";
 
 const ItemView = ({ item }) => {
   function trimText(text, limit) {
@@ -39,41 +35,14 @@ const ItemView = ({ item }) => {
   );
 };
 
-function HomeHeader() {
-  return (
-    <View>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Little Lemon</Text>
-        <View style={styles.flexRow}>
-          <View style={styles.flexTextInfo}>
-            <Text style={styles.headerSubtitle}>Chicago</Text>
-            <Text style={styles.headerText}>
-              We are a family owned Mediterranean restaurant focused on
-              traditional recipes served with a modern twist.
-            </Text>
-          </View>
-          <Image
-            source={require("../assets/icon.png")}
-            style={styles.headerImg}
-          />
-        </View>
-
-        <Image
-          source={require("../assets/icon.png")}
-          style={styles.finderImg}
-        />
-      </View>
-      <View style={styles.quickFilterContainer}>
-        <Text style={styles.quickFilterHeader}>Order for delivery</Text>
-        <Text style={styles.quickFilterButton}>[Category filters]</Text>
-      </View>
-    </View>
-  );
-}
-
 export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
+  const [isInitialMount, setIsInitialMount] = useState(true);
   const [data, setData] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [filtSel, setFiltSel] = useState(categories.map(() => false));
+  const [query, setQuery] = useState("");
+
   const pullData = async () => {
     try {
       console.log("fetching data ...");
@@ -81,92 +50,61 @@ export default function HomeScreen() {
         "https://raw.githubusercontent.com/Meta-Mobile-Developer-PC/Working-With-Data-API/main/capstone.json",
       );
       const json = await response.json();
-      db.transaction((tx) => {
-        json.menu.forEach((item) => {
-          tx.executeSql(
-            `INSERT INTO menuItems (name, category, price, description, image) values (?, ?, ?, ?, ?)`,
-            [
-              item.name,
-              item.category,
-              item.price,
-              item.description,
-              item.image,
-            ],
-            (insertResults) => console.log("Successful insertion"),
-          ),
-            (_, error) => console.log("data insertion error: ", error);
-        });
-      });
-
-      // setData(json.menu);
+      insertData(json.menu);
+      console.log("pulling data");
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
   };
-  const createTableIfNotExists = () => {
-    db.transaction((tx) => {
-      // tx.executeSql(
-      //     "DROP TABLE IF EXISTS menuItems",
-      //     [],
-      //     () => { console.log('table dropped')},
-      //     (_, error) => {console.log('error: ', error)}
-      // )
-      tx.executeSql(
-        `CREATE TABLE IF NOT EXISTS menuItems (
-            id INTEGER PRIMARY KEY NOT NULL,
-            name TEXT,
-            category TEXT,
-            price REAL,
-            description TEXT,
-            image TEXT
-
-           )`,
-        [],
-        () => {
-          console.log("table created successfully");
-        },
-        (_, error) => {
-          console.error("Error occured while creating table", error);
-        },
-      );
-    });
-  };
-
-  const readLocalData = async () => {
-    return new Promise((resolve, reject) => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          "SELECT * FROM menuItems",
-          [],
-          (_, result) => resolve(result.rows._array),
-          (_, error) => {
-            console.log("Database read error:", error);
-            reject(error);
-          },
-        );
-      });
-    });
-  };
 
   useEffect(() => {
     const fetchData = async () => {
       let results = await readLocalData();
       if (results.length > 0) {
-        console.log("Using local data ...");
         setData(results);
       } else {
-        console.log("Requesting a new dataset ...");
         await pullData();
         results = await readLocalData();
         setData(results);
       }
+      const uniqueCategories = await getCategories();
+      setCategories(uniqueCategories);
     };
 
     createTableIfNotExists();
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (isInitialMount) {
+      setIsInitialMount(false);
+    } else {
+      const activeCategories = categories.filter((s, i) => {
+        // If all filters are deselected, all categories are active
+        if (filtSel.every((item) => item === false)) {
+          return true;
+        }
+        return filtSel[i];
+      });
+      try {
+        filterByQueryAndCategories(query, activeCategories).then(
+          (menuItems) => {
+            setData(menuItems);
+          },
+        );
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [filtSel, query]);
+
+  const handleSelectCategory = async (index) => {
+    const arrayCopy = [...filtSel];
+    arrayCopy[index] = !filtSel[index];
+    setFiltSel(arrayCopy);
+  };
 
   return (
     <View style={styles.container}>
@@ -174,7 +112,15 @@ export default function HomeScreen() {
         data={data}
         keyExtractor={(item) => item.name + item.image}
         renderItem={ItemView}
-        ListHeaderComponent={HomeHeader}
+        ListHeaderComponent={
+          <HomeHeader
+            query={query}
+            onChangeQuery={setQuery}
+            categories={categories}
+            selections={filtSel}
+            onChange={handleSelectCategory}
+          />
+        }
       />
     </View>
   );
@@ -213,7 +159,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "500",
   },
-  quickFilterButton: {},
+  quickFilterButton: {
+    paddingHorizontal: 10,
+    padding: 5,
+    marginHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "#b7b7b7",
+  },
   finderImg: {
     width: 30,
     height: 30,
@@ -241,7 +193,6 @@ const styles = StyleSheet.create({
   },
   flexRow: {
     flexDirection: "row",
-    marginBottom: 16,
   },
   flexTextInfo: {
     flexDirection: "column",

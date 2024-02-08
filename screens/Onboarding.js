@@ -27,10 +27,7 @@ const validateName = (name) => {
 export default function Onboarding() {
   const [firstName, setFirstName] = React.useState("");
   const [email, setEmail] = React.useState(null);
-  // TODO - use state and setState from context instead
-  const { state, setState } = React.useContext(
-    AppStateContext,
-  );
+  const { state, setState } = React.useContext(AppStateContext);
 
   const handlePress = () => {
     const hasValidName = validateName(firstName);
@@ -42,7 +39,13 @@ export default function Onboarding() {
       Alert.alert("Email is invalid!");
     }
     if (hasValidName && hasValidEmail) {
-      setState({...state, firstName: firstName, email: email, isOnboardingCompleted: true})
+      setState({
+        ...state,
+        firstName: firstName,
+        email: email,
+        isOnboardingCompleted: true,
+        avatarInitials: firstName[0].toUpperCase(),
+      });
     }
   };
   return (
