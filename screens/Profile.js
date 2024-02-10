@@ -210,7 +210,7 @@ export default function ProfileScreen() {
           value={emailOtherStatuses}
           onValueChange={setEmailOtherStatuses}
           style={styles.checkbox}
-          color={emailOtherStatuses ? "#3e524b" : "#d5d7d9"}
+          color={emailOtherStatuses ? "#495e57" : "#d5d7d9"}
         />
         <Text style={styles.inputLabel}>Order statuses</Text>
       </View>
@@ -219,7 +219,7 @@ export default function ProfileScreen() {
           value={emailPasswordChanges}
           onValueChange={setEmailPasswordChanges}
           style={styles.checkbox}
-          color={emailPasswordChanges ? "#3e524b" : "#d5d7d9"}
+          color={emailPasswordChanges ? "#495e57" : "#d5d7d9"}
         />
         <Text style={styles.inputLabel}>Password changes</Text>
       </View>
@@ -228,7 +228,7 @@ export default function ProfileScreen() {
           value={emailSpecialOffers}
           onValueChange={setEmailSpecialOffers}
           style={styles.checkbox}
-          color={emailSpecialOffers ? "#3e524b" : "#d5d7d9"}
+          color={emailSpecialOffers ? "#495e57" : "#d5d7d9"}
         />
         <Text style={styles.inputLabel}>Special offers</Text>
       </View>
@@ -237,7 +237,7 @@ export default function ProfileScreen() {
           value={emailNewsletter}
           onValueChange={setEmailNewsletter}
           style={styles.checkbox}
-          color={emailNewsletter ? "#3e524b" : "#d5d7d9"}
+          color={emailNewsletter ? "#495e57" : "#d5d7d9"}
         />
         <Text style={styles.inputLabel}>Newsletter</Text>
       </View>

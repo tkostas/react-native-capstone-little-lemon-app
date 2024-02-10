@@ -54,6 +54,7 @@ export default function App() {
         // console.log("parsed local state: " + JSON.stringify(parsedState));
         return parsedState;
       } else {
+        // console.log('no local state found -> returning default state')
         return defaultState;
       }
     } catch (e) {
@@ -64,8 +65,8 @@ export default function App() {
   useEffect(() => {
     // console.log("initial state: " + JSON.stringify(state));
     loadLocalState().then((loadedState) => {
+      // console.log('loaded state: '+JSON.stringify(loadedState))
       setState({ ...state, ...loadedState, isLoading: false });
-      // console.log("initially loaded state: " + JSON.stringify(state));
     });
   }, []);
 
@@ -85,9 +86,9 @@ export default function App() {
 
   useEffect(() => {
     if (requestLogout) {
-      // console.log(
-      //   "user selected to logout --> setting state to default\n---------",
-      // );
+      console.log(
+        "user selected to logout --> setting state to default\n---------",
+      );
       try {
         AsyncStorage.removeItem("appState");
       } catch (e) {

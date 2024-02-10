@@ -131,11 +131,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    backgroundColor: "#095e2a",
+    backgroundColor: "#495e57",
     padding: 10,
   },
   headerTitle: {
-    color: "#d9b628",
+    color: "#f3cd14",
     fontSize: 40,
     fontWeight: "500",
   },
